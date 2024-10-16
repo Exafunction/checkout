@@ -80,6 +80,13 @@ export function fileExistsSync(path: string): boolean {
   return false
 }
 
+/**
+ * Searches a given directory and returns a list of file paths giving all files in that directory.
+ * The file paths all begin at `dir`.
+ *
+ * @param dir The directory to search
+ * @returns A list of file paths,
+ */
 export async function readdirRecursive(dir: string): Promise<string[]> {
   const files = await fs.promises.readdir(dir);
   const result: string[] = [];

@@ -39,7 +39,7 @@ export async function prepareExistingDirectory(
     
     for (const file of await fsHelper.readdirRecursive(lockDir)) {
       if (file.endsWith('index.lock') || file.endsWith('shallow.lock')) {
-        lockPaths.push(path.join(lockDir, file))
+        lockPaths.push(file)
       }
     }
 
@@ -131,4 +131,3 @@ export async function prepareExistingDirectory(
     }
   }
 }
-
