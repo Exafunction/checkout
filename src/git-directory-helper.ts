@@ -46,6 +46,7 @@ export async function prepareExistingDirectory(
     for (const lockPath of lockPaths) {
       try {
         await io.rmRF(lockPath)
+        core.info(`Deleted '${lockPath}'`)
       } catch (error) {
         core.debug(
           `Unable to delete '${lockPath}'. ${(error as any)?.message ?? error}`
