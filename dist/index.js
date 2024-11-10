@@ -25,9 +25,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fileExistsSync = exports.existsSync = exports.directoryExistsSync = void 0;
+exports.readdirRecursive = exports.fileExistsSync = exports.existsSync = exports.directoryExistsSync = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
 function directoryExistsSync(path, required) {
     var _a, _b, _c;
     if (!path) {
@@ -93,6 +103,31 @@ function fileExistsSync(path) {
     return false;
 }
 exports.fileExistsSync = fileExistsSync;
+/**
+ * Searches a given directory and returns a list of file paths giving all files in that directory.
+ * The file paths all begin at `dir`.
+ *
+ * @param dir The directory to search
+ * @returns A list of file paths,
+ */
+function readdirRecursive(dir) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const files = yield fs.promises.readdir(dir);
+        const result = [];
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stat = yield fs.promises.stat(filePath);
+            if (stat.isDirectory()) {
+                result.push(...(yield readdirRecursive(filePath)));
+            }
+            else {
+                result.push(filePath);
+            }
+        }
+        return result;
+    });
+}
+exports.readdirRecursive = readdirRecursive;
 
 
 /***/ }),
@@ -1036,9 +1071,16 @@ function prepareExistingDirectory(git, repositoryPath, repositoryUrl, clean, ref
                 path.join(repositoryPath, '.git', 'index.lock'),
                 path.join(repositoryPath, '.git', 'shallow.lock')
             ];
+            const lockDir = path.join(repositoryPath, '.git');
+            for (const file of yield fsHelper.readdirRecursive(lockDir)) {
+                if (file.endsWith('index.lock') || file.endsWith('shallow.lock')) {
+                    lockPaths.push(file);
+                }
+            }
             for (const lockPath of lockPaths) {
                 try {
                     yield io.rmRF(lockPath);
+                    core.info(`Deleted '${lockPath}'`);
                 }
                 catch (error) {
                     core.debug(`Unable to delete '${lockPath}'. ${(_b = (_a = error) === null || _a === void 0 ? void 0 : _a.message) !== null && _b !== void 0 ? _b : error}`);
@@ -1174,8 +1216,12 @@ function getSource(settings) {
         // Create directory
         let isExisting = true;
         if (!fsHelper.directoryExistsSync(settings.repositoryPath)) {
+            core.info("Directory does not exist yet, creating.");
             isExisting = false;
             yield io.mkdirP(settings.repositoryPath);
+        }
+        else {
+            core.info("Directory already exists, reusing.");
         }
         // Git command manager
         core.startGroup('Getting Git version info');
