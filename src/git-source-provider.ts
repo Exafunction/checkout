@@ -27,8 +27,11 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
   // Create directory
   let isExisting = true
   if (!fsHelper.directoryExistsSync(settings.repositoryPath)) {
+    core.info("Directory does not exist yet, creating.");
     isExisting = false
     await io.mkdirP(settings.repositoryPath)
+  } else {
+    core.info("Directory already exists, reusing.");
   }
 
   // Git command manager
