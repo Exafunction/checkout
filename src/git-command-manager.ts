@@ -437,6 +437,16 @@ class GitCommandManager {
   }
 
   async tryClean(): Promise<boolean> {
+    // First deinitialize all submodules
+    await this.execGit(['submodule', 'deinit', '-f', '--all'], true)
+
+    // Remove submodule git directories
+    const gitModulesPath = path.join(this.workingDirectory, '.git', 'modules')
+    if (fs.existsSync(gitModulesPath)) {
+      await io.rmRF(gitModulesPath)
+    }
+
+    // Then do the normal clean
     const output = await this.execGit(['clean', '-ffdx'], true)
     return output.exitCode === 0
   }
