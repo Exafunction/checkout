@@ -81,8 +81,9 @@ inputs:
     default: false
   submodules:
     description: >
-      Whether to checkout submodules: `true` to checkout submodules or `recursive` to
-      recursively checkout submodules.
+      Whether to checkout submodules: `true` to checkout submodules, `recursive` to
+      recursively checkout submodules, or a comma-separated list of specific submodule
+      names to checkout only those submodules (e.g., 'submodule1,submodule2').
 
 
       When the `ssh-key` input is not provided, SSH URLs beginning with `git@github.com:` are

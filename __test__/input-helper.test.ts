@@ -22,6 +22,11 @@ describe('input-helper tests', () => {
       return inputs[name]
     })
 
+    // Mock getMultilineInput
+    jest.spyOn(core, 'getMultilineInput').mockImplementation((name: string) => {
+      return inputs[name] ? inputs[name].split('\n') : []
+    })
+
     // Mock error/warning/info/debug
     jest.spyOn(core, 'error').mockImplementation(jest.fn())
     jest.spyOn(core, 'warning').mockImplementation(jest.fn())
@@ -143,5 +148,60 @@ describe('input-helper tests', () => {
   it('sets workflow organization ID', async () => {
     const settings: IGitSourceSettings = await inputHelper.getInputs()
     expect(settings.workflowOrganizationId).toBe(123456)
+  })
+
+  it('sets submodules to false by default', async () => {
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(false)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual([])
+  })
+
+  it('sets submodules to true when input is true', async () => {
+    inputs.submodules = 'true'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual([])
+  })
+
+  it('sets submodules to recursive when input is recursive', async () => {
+    inputs.submodules = 'recursive'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(true)
+    expect(settings.specificSubmodules).toEqual([])
+  })
+
+  it('parses comma-separated specific submodules', async () => {
+    inputs.submodules = 'submodule1,submodule2,submodule3'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual(['submodule1', 'submodule2', 'submodule3'])
+  })
+
+  it('handles whitespace in specific submodules list', async () => {
+    inputs.submodules = ' submodule1 , submodule2 , submodule3 '
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual(['submodule1', 'submodule2', 'submodule3'])
+  })
+
+  it('filters empty submodule names', async () => {
+    inputs.submodules = 'submodule1,,submodule2,'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual(['submodule1', 'submodule2'])
+  })
+
+  it('handles single specific submodule', async () => {
+    inputs.submodules = 'single-submodule'
+    const settings: IGitSourceSettings = await inputHelper.getInputs()
+    expect(settings.submodules).toBe(true)
+    expect(settings.nestedSubmodules).toBe(false)
+    expect(settings.specificSubmodules).toEqual(['single-submodule'])
   })
 })

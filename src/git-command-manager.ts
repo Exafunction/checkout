@@ -52,7 +52,9 @@ export interface IGitCommandManager {
   shaExists(sha: string): Promise<boolean>
   submoduleForeach(command: string, recursive: boolean): Promise<string>
   submoduleSync(recursive: boolean): Promise<void>
+  submoduleSyncSpecific(submodules: string[]): Promise<void>
   submoduleUpdate(fetchDepth: number, recursive: boolean): Promise<void>
+  submoduleUpdateSpecific(fetchDepth: number, submodules: string[]): Promise<void>
   submoduleStatus(): Promise<boolean>
   tagExists(pattern: string): Promise<boolean>
   tryClean(): Promise<boolean>
@@ -423,6 +425,35 @@ class GitCommandManager {
     }
 
     await this.execGit(args)
+  }
+
+  async submoduleSyncSpecific(submodules: string[]): Promise<void> {
+    for (const submodule of submodules) {
+      const args = ['submodule', 'sync', '--', submodule]
+      await this.execGit(args)
+    }
+  }
+
+  async submoduleUpdateSpecific(fetchDepth: number, submodules: string[]): Promise<void> {
+    // Sometimes the submodule can get in a state where there is no commit,
+    // which causes the update to fail.
+    // If so, create an empty commit first for specific submodules.
+    for (const submodule of submodules) {
+      await this.execGit([
+        'submodule', 'foreach', submodule,
+        'git rev-parse HEAD 2>/dev/null || git -c user.name="dummy" -c user.email="dummy@example.com" commit -m "empty commit" --allow-empty'
+      ]);
+    }
+
+    for (const submodule of submodules) {
+      const args = ['-c', 'protocol.version=2']
+      args.push('submodule', 'update', '--init', '--force')
+      if (fetchDepth > 0) {
+        args.push(`--depth=${fetchDepth}`)
+      }
+      args.push('--', submodule)
+      await this.execGit(args)
+    }
   }
 
   async submoduleStatus(): Promise<boolean> {

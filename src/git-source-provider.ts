@@ -236,14 +236,28 @@ export async function getSource(settings: IGitSourceSettings): Promise<void> {
       core.endGroup()
 
       // Checkout submodules
-      core.startGroup('Fetching submodules')
-      await git.submoduleSync(settings.nestedSubmodules)
-      await git.submoduleUpdate(settings.fetchDepth, settings.nestedSubmodules)
-      await git.submoduleForeach(
-        'git config --local gc.auto 0',
-        settings.nestedSubmodules
-      )
-      core.endGroup()
+      if (settings.specificSubmodules.length > 0) {
+        core.startGroup(`Fetching specific submodules: ${settings.specificSubmodules.join(', ')}`)
+        await git.submoduleSyncSpecific(settings.specificSubmodules)
+        await git.submoduleUpdateSpecific(settings.fetchDepth, settings.specificSubmodules)
+        // Configure gc.auto for specific submodules
+        for (const submodule of settings.specificSubmodules) {
+          await git.submoduleForeach(
+            'git config --local gc.auto 0',
+            false // Don't recurse for specific submodules
+          )
+        }
+        core.endGroup()
+      } else {
+        core.startGroup('Fetching submodules')
+        await git.submoduleSync(settings.nestedSubmodules)
+        await git.submoduleUpdate(settings.fetchDepth, settings.nestedSubmodules)
+        await git.submoduleForeach(
+          'git config --local gc.auto 0',
+          settings.nestedSubmodules
+        )
+        core.endGroup()
+      }
 
       // Persist credentials
       if (settings.persistCredentials) {

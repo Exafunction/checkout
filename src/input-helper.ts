@@ -125,15 +125,30 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   // Submodules
   result.submodules = false
   result.nestedSubmodules = false
-  const submodulesString = (core.getInput('submodules') || '').toUpperCase()
-  if (submodulesString == 'RECURSIVE') {
+  result.specificSubmodules = []
+  const submodulesString = core.getInput('submodules') || ''
+  const submodulesStringUpper = submodulesString.toUpperCase()
+  
+  if (submodulesStringUpper == 'RECURSIVE') {
     result.submodules = true
     result.nestedSubmodules = true
-  } else if (submodulesString == 'TRUE') {
+  } else if (submodulesStringUpper == 'TRUE') {
     result.submodules = true
+  } else if (submodulesString && submodulesStringUpper !== 'FALSE') {
+    // Parse comma-separated list of specific submodules
+    result.specificSubmodules = submodulesString
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+    
+    if (result.specificSubmodules.length > 0) {
+      result.submodules = true
+    }
   }
+  
   core.debug(`submodules = ${result.submodules}`)
   core.debug(`recursive submodules = ${result.nestedSubmodules}`)
+  core.debug(`specific submodules = ${result.specificSubmodules.join(', ')}`)
 
   // Auth token
   result.authToken = core.getInput('token', {required: true})
