@@ -147,7 +147,7 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   
   core.debug(`submodules = ${result.submodules}`)
   core.debug(`recursive submodules = ${result.nestedSubmodules}`)
-  core.warning(`specific submodules = ${result.specificSubmodules.join(', ')}`)
+  core.debug(`specific submodules = ${result.specificSubmodules.join(', ')}`)
 
   // Auth token
   result.authToken = core.getInput('token', {required: true})
