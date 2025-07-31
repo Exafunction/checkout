@@ -127,14 +127,13 @@ export async function getInputs(): Promise<IGitSourceSettings> {
   result.nestedSubmodules = false
   result.specificSubmodules = []
   const submodulesString = core.getInput('submodules') || ''
-  const submodulesStringUpper = submodulesString.toUpperCase()
   
-  if (submodulesStringUpper == 'RECURSIVE') {
+  if (submodulesString.toUpperCase() == 'RECURSIVE') {
     result.submodules = true
     result.nestedSubmodules = true
-  } else if (submodulesStringUpper == 'TRUE') {
+  } else if (submodulesString.toUpperCase() == 'TRUE') {
     result.submodules = true
-  } else if (submodulesString && submodulesStringUpper !== 'FALSE') {
+  } else if (submodulesString && submodulesString.toUpperCase() !== 'FALSE') {
     // Parse comma-separated list of specific submodules
     result.specificSubmodules = submodulesString
       .split(',')

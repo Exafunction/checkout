@@ -439,10 +439,28 @@ class GitCommandManager {
     // which causes the update to fail.
     // If so, create an empty commit first for specific submodules.
     for (const submodule of submodules) {
-      await this.execGit([
-        'submodule', 'foreach', submodule,
-        'git rev-parse HEAD 2>/dev/null || git -c user.name="dummy" -c user.email="dummy@example.com" commit -m "empty commit" --allow-empty'
-      ]);
+      // Get submodule path
+      const submodulePath = (
+        await this.execGit([
+          'config',
+          '--file',
+          '.gitmodules',
+          '--get',
+          `submodule.${submodule}.path`
+        ])
+      ).stdout.trim()
+
+      // Execute in submodule folder
+      await exec.exec(
+        'bash',
+        [
+          '-c',
+          'git rev-parse HEAD 2>/dev/null || git -c user.name="dummy" -c user.email="dummy@example.com" commit -m "empty commit" --allow-empty'
+        ],
+        {
+          cwd: path.join(this.workingDirectory, submodulePath)
+        }
+      )
     }
 
     for (const submodule of submodules) {
