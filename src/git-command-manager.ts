@@ -396,6 +396,36 @@ class GitCommandManager {
     return output.stdout
   }
 
+  async submoduleExec(
+    submodule: string,
+    command: string,
+    args?: string[]
+  ): Promise<GitOutput> {
+    const result = new GitOutput()
+    const defaultListener = {
+      stdout: (data: Buffer) => {
+        stdout.push(data.toString())
+      }
+    }
+    const stdout: string[] = []
+    const submodulePath = await this.execGit([
+      'config',
+      '--file',
+      '.gitmodules',
+      '--get',
+      `submodule.${submodule}.path`
+    ]).stdout.trim()
+
+    result.exitCode = await exec.exec("bash", ["-c", command],
+      {
+        cwd: path.join(this.workingDirectory, submodulePath),
+        listeners: defaultListener
+      }
+    )
+    result.stdout = stdout.join('\n')
+    return result
+  }
+
   async submoduleSync(recursive: boolean): Promise<void> {
     const args = ['submodule', 'sync']
     if (recursive) {
@@ -439,28 +469,7 @@ class GitCommandManager {
     // which causes the update to fail.
     // If so, create an empty commit first for specific submodules.
     for (const submodule of submodules) {
-      // Get submodule path
-      const submodulePath = (
-        await this.execGit([
-          'config',
-          '--file',
-          '.gitmodules',
-          '--get',
-          `submodule.${submodule}.path`
-        ])
-      ).stdout.trim()
-
-      // Execute in submodule folder
-      await exec.exec(
-        'bash',
-        [
-          '-c',
-          'git rev-parse HEAD 2>/dev/null || git -c user.name="dummy" -c user.email="dummy@example.com" commit -m "empty commit" --allow-empty'
-        ],
-        {
-          cwd: path.join(this.workingDirectory, submodulePath)
-        }
-      )
+      await this.submoduleExec(submodule, 'git rev-parse HEAD 2>/dev/null || git -c user.name="dummy" -c user.email="dummy@example.com" commit -m "empty commit" --allow-empty')
     }
 
     for (const submodule of submodules) {
