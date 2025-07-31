@@ -75,6 +75,11 @@ export interface IGitSourceSettings {
   nestedSubmodules: boolean
 
   /**
+   * List of specific submodules to checkout (when not checking out all submodules)
+   */
+  specificSubmodules: string[]
+
+  /**
    * The auth token to use when fetching the repository
    */
   authToken: string
